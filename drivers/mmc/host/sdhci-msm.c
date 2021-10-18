@@ -4181,8 +4181,7 @@ void sdhci_msm_pm_qos_irq_init(struct sdhci_host *host)
 		(msm_host->pm_qos_irq.req.type != PM_QOS_REQ_ALL_CORES))
 		set_affine_irq(msm_host, host);
 	else
-		atomic_set(&msm_host->pm_qos_irq.req.cpus_affine,
-			*cpumask_bits(cpumask_of(msm_host->pdata->pm_qos_data.irq_cpu)));
+        msm_host->pm_qos_irq.req.cpus_affine = *cpumask_bits(cpumask_of(msm_host->pdata->pm_qos_data.irq_cpu));
 
 	sdhci_msm_pm_qos_wq_init(msm_host);
 
