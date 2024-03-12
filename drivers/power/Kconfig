@@ -1,3 +1,89 @@
 source "drivers/power/avs/Kconfig"
 source "drivers/power/reset/Kconfig"
 source "drivers/power/supply/Kconfig"
+
+config POWER_SAVER
+    bool "Save power when screen is off"
+    help
+		This allow to save power when screen is off.
+
+config POWER_SAVER_CPU_MIN_FREQ_LITTLE
+    int "Screen on minimum frequency for the little cluster"
+    default 0
+    help
+      This sets the screen on minimum frequency (in kHz) for the little CPU
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_CPU_MIN_FREQ_BIG
+    int "Screen on minimum frequency for the big cluster"
+    default 0
+    help
+      This sets the screen on minimum frequency (in kHz) for the big CPU
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_CPU_MIN_FREQ_PRIME
+    int "Screen on minimum frequency for the prime cluster"
+    default 0
+    help
+      This sets the screen on minimum frequency (in kHz) for the prime CPU
+      cluster. Ignore if no such cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_CPU_MAX_FREQ_LITTLE
+    int "Screen off maximum frequency for the little cluster"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the little CPU
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_CPU_MAX_FREQ_BIG
+    int "Screen off maximum frequency for the big cluster"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the big CPU
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_CPU_MAX_FREQ_PRIME
+    int "Screen off maximumfrequency for the prime cluster"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the prime CPU
+      cluster. Ignore if no such cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_CPU_MAX_FREQ_SND_LITTLE
+    int "Screen off maximum frequency for the little cluster while sound playing"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the little CPU while sound playing
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_CPU_MAX_FREQ_SND_BIG
+    int "Screen off maximum frequency for the big cluster while sound playing"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the big CPU while sound playing
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_CPU_MAX_FREQ_SND_PRIME
+    int "Screen off maximumfrequency for the prime cluster while sound playing"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the prime CPU while sound playing
+      cluster. Ignore if no such cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
