@@ -1,3 +1,147 @@
 source "drivers/power/avs/Kconfig"
 source "drivers/power/reset/Kconfig"
 source "drivers/power/supply/Kconfig"
+
+config POWER_SAVER
+    bool "Save power when screen is off"
+    help
+	This allow to save power when screen is off and enhance performance when screen is on.
+
+config POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_LITTLE
+    int "Screen on minimum frequency for the little cluster"
+    default 0
+    help
+      This sets the screen on minimum frequency (in kHz) for the little CPU
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_BIG
+    int "Screen on minimum frequency for the big cluster"
+    default 0
+    help
+      This sets the screen on minimum frequency (in kHz) for the big CPU
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_PRIME
+    int "Screen on minimum frequency for the prime cluster"
+    default 0
+    help
+      This sets the screen on minimum frequency (in kHz) for the prime CPU
+      cluster. Ignore if no such cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_LITTLE
+    int "Screen off maximum frequency for the little cluster"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the little CPU
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_BIG
+    int "Screen off maximum frequency for the big cluster"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the big CPU
+      cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_PRIME
+    int "Screen off maximumfrequency for the prime cluster"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the prime CPU
+      cluster. Ignore if no such cluster.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_LITTLE
+    int "Screen off maximum frequency for the little cluster while sound playing"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the little CPU while sound playing.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_BIG
+    int "Screen off maximum frequency for the big cluster while sound playing"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the big CPU while sound playing.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+config POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_PRIME
+    int "Screen off maximum frequency for the prime cluster while sound playing"
+    default 0
+    help
+      This sets the screen off maximum frequency (in kHz) for the prime CPU while sound playing.
+
+      If in doubt, check https://github.com/kdrag0n/freqbench.
+
+
+config POWER_SAVER_SCREEN_OFF_LLCC_DDR_BW
+    int "Screen off frequency for cpu-llcc-ddr-bw device"
+    default 0
+    help
+	"Screen off LLCC DDR bandwith"
+
+config POWER_SAVER_SCREEN_OFF_DDR_LATFLOOR
+    int "Screen off frequency for cpu-ddr-latfloor device"
+    default 0
+    help
+	"Screen off DDR latency"
+
+config POWER_SAVER_SCREEN_OFF_LLCC_DDR_LAT
+    int "Screen off frequency for llcc-ddr-lat device"
+    default 0
+    help
+	"Screen off LLCC DDR latency"
+
+config POWER_SAVER_SCREEN_OFF_CPU_LLCC_BW
+    int "Screen off frequency for cpu-llcc-bw device"
+    default 0
+    help
+	"Screen off LLCC bandwith"
+
+config POWER_SAVER_SCREEN_OFF_CPU_LLCC_LAT
+    int "Screen off frequency for cpu-llcc-lat device"
+    default 0
+    help
+	"Screen off LLCC latency"
+
+config POWER_SAVER_SCREEN_OFF_SND_LLCC_DDR_BW
+    int "Screen off frequency for cpu-llcc-ddr-bw device while sound playing"
+    default 0
+    help
+	"Screen off LLCC DDR bandwith while sound playing"
+
+config POWER_SAVER_SCREEN_OFF_SND_DDR_LATFLOOR
+    int "Screen off frequency for cpu-ddr-latfloor device while sound playing"
+    default 0
+    help
+	"Screen off DDR latency while sound playing"
+
+config POWER_SAVER_SCREEN_OFF_SND_LLCC_DDR_LAT
+    int "Screen off frequency for llcc-ddr-lat device while sound playing"
+    default 0
+    help
+	"Screen off LLCC DDR latency while sound playing"
+
+config POWER_SAVER_SCREEN_OFF_SND_CPU_LLCC_BW
+    int "Screen off frequency for cpu-llcc-bw device while sound playing"
+    default 0
+    help
+	"Screen off LLCC bandwith while sound playing"
+
+config POWER_SAVER_SCREEN_OFF_SND_CPU_LLCC_LAT
+    int "Screen off frequency for cpu-llcc-lat device while sound playing"
+    default 0
+    help
+	"Screen off LLCC latency while sound playing"
