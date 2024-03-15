@@ -22,25 +22,28 @@
 #endif
 
 static unsigned int power_saver_cpu_min_little __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_LITTLE;
+	CONFIG_POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_LITTLE;
 static unsigned int power_saver_cpu_min_big __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_BIG;
+	CONFIG_POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_BIG;
 static unsigned int power_saver_cpu_min_prime __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_PRIME;
+	CONFIG_POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_PRIME;
 
 static unsigned int power_saver_cpu_max_little __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_LITTLE;
+	CONFIG_POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_LITTLE;
 static unsigned int power_saver_cpu_max_big __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_BIG;
+	CONFIG_POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_BIG;
 static unsigned int power_saver_cpu_max_prime __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_PRIME;
+	CONFIG_POWER_SAVER_SCREEN_OFF_CPU_MAX_FREQ_PRIME;
 
 static unsigned int power_saver_cpu_max_snd_little __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_LITTLE;
+	CONFIG_POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_LITTLE;
 static unsigned int power_saver_cpu_max_snd_big __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_BIG;
+	CONFIG_POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_BIG;
 static unsigned int power_saver_cpu_max_snd_prime __read_mostly =
-    CONFIG_POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_PRIME;
+	CONFIG_POWER_SAVER_SCREEN_OFF_SND_CPU_MAX_FREQ_PRIME;
+
+static unsigned int power_saver_ramping_duration __read_mostly =
+	CONFIG_POWER_SAVER_RAMPING_DURATION;
 
 static unsigned int devfreq_frequencies[DEVFREQ_MAX] __read_mostly = {
 	CONFIG_POWER_SAVER_SCREEN_OFF_LLCC_DDR_BW,
@@ -64,18 +67,39 @@ struct devfreq_device {
 	enum devfreq_device_type type;
 };
 
-struct power_saver_drv {
-	struct notifier_block cpu_notif;
-	struct notifier_block msm_drm_notif;
-	wait_queue_head_t update_waitq;
-	struct devfreq_device *devfreq_devices[DEVFREQ_MAX];
-	bool screen_on;
+enum power_saver_state {
+	POWER_SAVER_STATE_NONE       = 1 << 0,
+	POWER_SAVER_STATE_SCREEN_ON  = 1 << 1,
+	POWER_SAVER_STATE_UPDATED    = 1 << 2
+};
+
+struct power_saver_status {
+	enum power_saver_state state;
 	unsigned int streams;
 };
 
-struct power_saver_drv power_saver_drv __read_mostly = {
-	.update_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(power_saver_drv.update_waitq),
+struct power_saver_drv {
+	struct notifier_block cpu_notif;
+	struct notifier_block msm_drm_notif;
+	struct delayed_work slow_ramping;
+	wait_queue_head_t update_waitq;
+	struct power_saver_status status;
+	struct devfreq_device *devfreq_devices[DEVFREQ_MAX];
+};
+
+static void slow_ramping_worker(struct work_struct *work) {
+	struct power_saver_drv *drv = container_of(to_delayed_work(work),
+					           typeof(*drv), slow_ramping);
+
+	drv->status.state |= POWER_SAVER_STATE_UPDATED;
+	wake_up(&drv->update_waitq);
 }
+
+struct power_saver_drv power_saver_drv __read_mostly = {
+	.slow_ramping = __DELAYED_WORK_INITIALIZER(power_saver_drv.slow_ramping,
+						   slow_ramping_worker, 0),
+	.update_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(power_saver_drv.update_waitq),
+};
 
 void power_saver_register_devfreq(struct devfreq *devfreq, const char *devname)
 {
@@ -120,15 +144,18 @@ EXPORT_SYMBOL(power_saver_register_devfreq);
 
 static void sound_enabled(void)
 {
-	power_saver_drv.streams += 1;
+	power_saver_drv.status.streams += 1;
+	power_saver_drv.status.state |= POWER_SAVER_STATE_UPDATED;
 	wake_up(&power_saver_drv.update_waitq);
 }
 
 static void sound_disabled(void)
 {
-	if (power_saver_drv.streams > 0)
-		power_saver_drv.streams -= 1;
-	wake_up(&power_saver_drv.update_waitq);
+	if (power_saver_drv.status.streams > 0) {
+		power_saver_drv.status.streams -= 1;
+		power_saver_drv.status.state |= POWER_SAVER_STATE_UPDATED;
+		wake_up(&power_saver_drv.update_waitq);
+	}
 }
 
 static unsigned int get_max_freq(struct cpufreq_policy *policy)
@@ -136,19 +163,19 @@ static unsigned int get_max_freq(struct cpufreq_policy *policy)
 	unsigned int freq;
 
 	if (cpumask_test_cpu(policy->cpu, cpu_lp_mask)) {
-		if (power_saver_drv.streams > 0) {
+		if (power_saver_drv.status.streams > 0) {
 			freq = power_saver_cpu_max_snd_little;
 		} else {
 			freq = power_saver_cpu_max_little;
 		}
 	} else if (cpumask_test_cpu(policy->cpu, cpu_perf_mask)) {
-		if (power_saver_drv.streams > 0) {
+		if (power_saver_drv.status.streams > 0) {
 			freq = power_saver_cpu_max_snd_big;
 		} else {
 			freq = power_saver_cpu_max_prime;
 		}
 	} else {
-		if (power_saver_drv.streams > 0) {
+		if (power_saver_drv.status.streams > 0) {
 			freq = power_saver_cpu_max_snd_prime;
 		} else {
 			freq = power_saver_cpu_max_prime;
@@ -172,6 +199,14 @@ static unsigned int get_min_freq(struct cpufreq_policy *policy)
 	return max(freq, policy->cpuinfo.min_freq);
 }
 
+static unsigned int get_slow_ramping_freq(struct cpufreq_policy *policy, unsigned int target_freq, unsigned int relation) {
+	int idx;
+	
+	idx = cpufreq_frequency_table_target(policy, target_freq, relation);
+
+	return policy->freq_table[idx].frequency;
+}
+
 static void update_online_cpu_policy(void)
 {
 	unsigned int cpu;
@@ -192,14 +227,13 @@ static void update_online_cpu_policy(void)
 	}
 	put_online_cpus();
 }
-
-static void update_devfreq_policy(void)
+static void update_devfreq_policy()
 {
 	struct devfreq_device *device;
 	unsigned int (*frequencies)[DEVFREQ_MAX];
 	int i, j;
 
-	if (power_saver_drv.streams > 0)
+	if (power_saver_drv.status.streams > 0)
 		frequencies = &devfreq_frequencies_snd;
 	else
 		frequencies = &devfreq_frequencies;
@@ -212,7 +246,7 @@ static void update_devfreq_policy(void)
 		for (j = 0; j < device->count ; j++) {
 			mutex_lock(&device->devfreq[j]->lock);
 
-			if (power_saver_drv.screen_on) {
+			if (power_saver_drv.status.state & POWER_SAVER_STATE_SCREEN_ON) {
 				device->devfreq[j]->max_freq =
 					device->devfreq[j]->profile->freq_table[
 						device->devfreq[j]->profile->max_state - 1
@@ -233,26 +267,21 @@ static int update_thread(void *data)
 		.sched_priority = MAX_RT_PRIO - 1
 	};
 	struct power_saver_drv *drv = data;
-	bool screen_on = false;
-	unsigned int streams = 0;
+	unsigned int status;
 
 	sched_setscheduler_nocheck(current, SCHED_FIFO, &sched_max_rt_prio);
 
 	while (1) {
-		bool _screen_on;
-		unsigned int _streams = streams;
 		bool should_stop = false;
 
 		wait_event(drv->update_waitq,
-			   (_screen_on = READ_ONCE(drv->screen_on)) != screen_on ||
-			   (_streams = READ_ONCE(drv->streams)) != streams ||
+			   (status = READ_ONCE(drv->status.state)) & POWER_SAVER_STATE_UPDATED ||
 			   (should_stop = kthread_should_stop()));
 
 		if (should_stop)
 			break;
-
-		screen_on = _screen_on;
-		streams = _streams;
+		
+		WRITE_ONCE(drv->status.state, status & ~POWER_SAVER_STATE_UPDATED);
 		update_online_cpu_policy();
 		update_devfreq_policy();
 	}
@@ -265,26 +294,37 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 {
 	struct power_saver_drv *drv = container_of(nb, typeof(*drv), cpu_notif);
 	struct cpufreq_policy *policy = data;
+	unsigned int freq_max, freq_min;
+	unsigned int relation_max, relation_min;
 
 	if (action != CPUFREQ_ADJUST)
 		return NOTIFY_OK;
 
 	/* When screen is on, use upper frequency */
-	if (drv->screen_on == true) {
-		policy->min = get_min_freq(policy);
-		policy->max = policy->cpuinfo.max_freq;
-		return NOTIFY_OK;
+	if (drv->status.state & POWER_SAVER_STATE_SCREEN_ON) {
+		freq_min = get_min_freq(policy);
+		freq_max = policy->cpuinfo.max_freq;
+	} else {
+		freq_min = policy->cpuinfo.min_freq;
+		freq_max = get_max_freq(policy);
 	}
-	policy->max = get_max_freq(policy);
-	policy->min = policy->cpuinfo.min_freq;
+
+	/* We do not want to ramp directly, so do this step by steps using a delayed work */
+	relation_min = freq_min > policy->min ? CPUFREQ_RELATION_H : CPUFREQ_RELATION_L;
+	relation_max = freq_max > policy->max ? CPUFREQ_RELATION_H : CPUFREQ_RELATION_L;
+	policy->max = get_slow_ramping_freq(policy, freq_max, relation_max);
+	policy->min = get_slow_ramping_freq(policy, freq_min, relation_min);
+	if (policy->max != freq_max || policy->min != freq_min)
+		mod_delayed_work(system_unbound_wq,
+				 &power_saver_drv.slow_ramping,
+				 msecs_to_jiffies(power_saver_ramping_duration));
+
 	return NOTIFY_OK;
 }
 
 static int msm_drm_notifier_cb(struct notifier_block *nb, unsigned long action,
 			       void *data)
 {
-	struct power_saver_drv *drv =
-	    container_of(nb, typeof(*drv), msm_drm_notif);
 	struct msm_drm_notifier *evdata = data;
 	int *blank = evdata->data;
 
@@ -292,16 +332,16 @@ static int msm_drm_notifier_cb(struct notifier_block *nb, unsigned long action,
 	if (action != MSM_DRM_EARLY_EVENT_BLANK)
 		return NOTIFY_OK;
 
-	if (*blank == MSM_DRM_BLANK_UNBLANK) {
-		drv->screen_on = true;
-	} else if (*blank == MSM_DRM_BLANK_POWERDOWN) {
-		drv->screen_on = false;
-	}
+	if (*blank == MSM_DRM_BLANK_UNBLANK)
+		power_saver_drv.status.state |= POWER_SAVER_STATE_SCREEN_ON;
+	else if (*blank == MSM_DRM_BLANK_POWERDOWN)
+		power_saver_drv.status.state &= ~POWER_SAVER_STATE_SCREEN_ON;
+	else
+		return NOTIFY_OK;
 
-	wake_up(&drv->update_waitq);
+	wake_up(&power_saver_drv.update_waitq);
 	return NOTIFY_OK;
 }
-
 struct power_saver power_saver __read_mostly = {
 	.sound_enabled = sound_enabled,
 	.sound_disabled = sound_disabled
@@ -319,8 +359,8 @@ static int __init power_saver_init(void)
 		drv->devfreq_devices[i] = NULL;
 	}
 
-	drv->screen_on = true;
-	drv->streams = 0;
+	drv->status.state = POWER_SAVER_STATE_NONE;
+	drv->status.streams = 0;
 
 	drv->cpu_notif.notifier_call = cpu_notifier_cb;
 	ret =

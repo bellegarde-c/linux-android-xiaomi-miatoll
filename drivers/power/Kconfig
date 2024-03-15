@@ -7,6 +7,12 @@ config POWER_SAVER
     help
 	This allow to save power when screen is off and enhance performance when screen is on.
 
+config POWER_SAVER_RAMPING_DURATION
+    int "Ramping duration while updating frequencies"
+    default 1000
+    help
+      Ramping duration in milliseconds while updating frequencies
+
 config POWER_SAVER_SCREEN_ON_CPU_MIN_FREQ_LITTLE
     int "Screen on minimum frequency for the little cluster"
     default 0

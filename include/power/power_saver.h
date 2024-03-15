@@ -29,6 +29,6 @@ void power_saver_register_devfreq(struct devfreq *devfreq, const char *devname);
 static inline void power_saver_register_devfreq(struct devfreq *devfreq, const char *devname) {}
 #endif
 
-extern struct power_saver_drv power_saver;
+extern struct power_saver power_saver;
 
 #endif /* _POWER_SAVER_H_ */
