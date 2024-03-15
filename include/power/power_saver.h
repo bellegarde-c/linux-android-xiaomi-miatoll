@@ -17,19 +17,8 @@ enum devfreq_device_type {
 	DEVFREQ_MAX
 };
 
-struct devfreq_device {
-	struct devfreq **devfreq;
-	unsigned int count;
-	enum devfreq_device_type type;
-};
 
-struct power_saver_drv {
-	struct notifier_block cpu_notif;
-	struct notifier_block msm_drm_notif;
-	wait_queue_head_t update_waitq;
-	struct devfreq_device *devfreq_devices[DEVFREQ_MAX];
-	bool screen_on;
-	unsigned int streams;
+struct power_saver {
 	void (*sound_enabled)(void);
 	void (*sound_disabled)(void);
 };

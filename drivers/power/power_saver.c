@@ -58,6 +58,25 @@ static unsigned int devfreq_frequencies_snd[DEVFREQ_MAX] __read_mostly = {
 	CONFIG_POWER_SAVER_SCREEN_OFF_SND_CPU_LLCC_LAT
 };
 
+struct devfreq_device {
+	struct devfreq **devfreq;
+	unsigned int count;
+	enum devfreq_device_type type;
+};
+
+struct power_saver_drv {
+	struct notifier_block cpu_notif;
+	struct notifier_block msm_drm_notif;
+	wait_queue_head_t update_waitq;
+	struct devfreq_device *devfreq_devices[DEVFREQ_MAX];
+	bool screen_on;
+	unsigned int streams;
+};
+
+struct power_saver_drv power_saver_drv __read_mostly = {
+	.update_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(power_saver_drv.update_waitq),
+}
+
 void power_saver_register_devfreq(struct devfreq *devfreq, const char *devname)
 {
 	struct devfreq_device *device;
@@ -80,13 +99,13 @@ void power_saver_register_devfreq(struct devfreq *devfreq, const char *devname)
 
         pr_info("Registering %s", devname);
 
-	device = power_saver.devfreq_devices[device_type];
+	device = power_saver_drv.devfreq_devices[device_type];
 	if (!device) {
 		device = kmalloc(sizeof(struct devfreq_device), GFP_KERNEL);
 		device->devfreq = NULL;
 		device->count = 0;
 		device->type = device_type;
-		WRITE_ONCE(power_saver.devfreq_devices[device_type], device);
+		WRITE_ONCE(power_saver_drv.devfreq_devices[device_type], device);
 	}
 
 	if (!device) {
@@ -101,15 +120,15 @@ EXPORT_SYMBOL(power_saver_register_devfreq);
 
 static void sound_enabled(void)
 {
-	power_saver.streams += 1;
-	wake_up(&power_saver.update_waitq);
+	power_saver_drv.streams += 1;
+	wake_up(&power_saver_drv.update_waitq);
 }
 
 static void sound_disabled(void)
 {
-	if (power_saver.streams > 0)
-		power_saver.streams -= 1;
-	wake_up(&power_saver.update_waitq);
+	if (power_saver_drv.streams > 0)
+		power_saver_drv.streams -= 1;
+	wake_up(&power_saver_drv.update_waitq);
 }
 
 static unsigned int get_max_freq(struct cpufreq_policy *policy)
@@ -117,19 +136,19 @@ static unsigned int get_max_freq(struct cpufreq_policy *policy)
 	unsigned int freq;
 
 	if (cpumask_test_cpu(policy->cpu, cpu_lp_mask)) {
-		if (power_saver.streams > 0) {
+		if (power_saver_drv.streams > 0) {
 			freq = power_saver_cpu_max_snd_little;
 		} else {
 			freq = power_saver_cpu_max_little;
 		}
 	} else if (cpumask_test_cpu(policy->cpu, cpu_perf_mask)) {
-		if (power_saver.streams > 0) {
+		if (power_saver_drv.streams > 0) {
 			freq = power_saver_cpu_max_snd_big;
 		} else {
 			freq = power_saver_cpu_max_prime;
 		}
 	} else {
-		if (power_saver.streams > 0) {
+		if (power_saver_drv.streams > 0) {
 			freq = power_saver_cpu_max_snd_prime;
 		} else {
 			freq = power_saver_cpu_max_prime;
@@ -180,20 +199,20 @@ static void update_devfreq_policy(void)
 	unsigned int (*frequencies)[DEVFREQ_MAX];
 	int i, j;
 
-	if (power_saver.streams > 0)
+	if (power_saver_drv.streams > 0)
 		frequencies = &devfreq_frequencies_snd;
 	else
 		frequencies = &devfreq_frequencies;
 
 	for (i = 0; i < DEVFREQ_MAX; i++) {
-		if (power_saver.devfreq_devices[i] == NULL)
+		if (power_saver_drv.devfreq_devices[i] == NULL)
 			continue;
 
-		device = power_saver.devfreq_devices[i];
+		device = power_saver_drv.devfreq_devices[i];
 		for (j = 0; j < device->count ; j++) {
 			mutex_lock(&device->devfreq[j]->lock);
 
-			if (power_saver.screen_on) {
+			if (power_saver_drv.screen_on) {
 				device->devfreq[j]->max_freq =
 					device->devfreq[j]->profile->freq_table[
 						device->devfreq[j]->profile->max_state - 1
@@ -283,17 +302,15 @@ static int msm_drm_notifier_cb(struct notifier_block *nb, unsigned long action,
 	return NOTIFY_OK;
 }
 
-struct power_saver_drv power_saver __read_mostly = {
-	.update_waitq = __WAIT_QUEUE_HEAD_INITIALIZER(power_saver.update_waitq),
+struct power_saver power_saver __read_mostly = {
 	.sound_enabled = sound_enabled,
 	.sound_disabled = sound_disabled
 };
-
 EXPORT_SYMBOL(power_saver);
 
 static int __init power_saver_init(void)
 {
-	struct power_saver_drv *drv = &power_saver;
+	struct power_saver_drv *drv = &power_saver_drv;
 	struct task_struct *thread;
 	int ret;
 	int i;
