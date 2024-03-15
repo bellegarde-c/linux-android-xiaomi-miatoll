@@ -199,11 +199,13 @@ static unsigned int get_min_freq(struct cpufreq_policy *policy)
 	return max(freq, policy->cpuinfo.min_freq);
 }
 
-static unsigned int get_slow_ramping_freq(struct cpufreq_policy *policy, unsigned int target_freq, unsigned int relation) {
+static unsigned int get_slow_ramping_freq(struct cpufreq_policy *policy, unsigned int relation) {
 	int idx;
+	int diff = relation == CPUFREQ_RELATION_L ? -1 : 1;
 	
-	idx = cpufreq_frequency_table_target(policy, target_freq, relation);
+	idx = cpufreq_frequency_table_target(policy, policy->cur + diff, relation);
 
+	pr_info("get_slow_ramping_freq: %d %d %d", policy->cur, relation, policy->freq_table[idx].frequency); 
 	return policy->freq_table[idx].frequency;
 }
 
@@ -273,11 +275,12 @@ static int update_thread(void *data)
 
 	while (1) {
 		bool should_stop = false;
-
+		pr_info("avant");
 		wait_event(drv->update_waitq,
 			   (status = READ_ONCE(drv->status.state)) & POWER_SAVER_STATE_UPDATED ||
 			   (should_stop = kthread_should_stop()));
 
+		pr_info("apres");
 		if (should_stop)
 			break;
 		
@@ -312,8 +315,9 @@ static int cpu_notifier_cb(struct notifier_block *nb, unsigned long action,
 	/* We do not want to ramp directly, so do this step by steps using a delayed work */
 	relation_min = freq_min > policy->min ? CPUFREQ_RELATION_H : CPUFREQ_RELATION_L;
 	relation_max = freq_max > policy->max ? CPUFREQ_RELATION_H : CPUFREQ_RELATION_L;
-	policy->max = get_slow_ramping_freq(policy, freq_max, relation_max);
-	policy->min = get_slow_ramping_freq(policy, freq_min, relation_min);
+	pr_info("before ramping: %d %d", freq_min, freq_max);
+	policy->max = get_slow_ramping_freq(policy, relation_max);
+	policy->min = get_slow_ramping_freq(policy, relation_min);
 	if (policy->max != freq_max || policy->min != freq_min)
 		mod_delayed_work(system_unbound_wq,
 				 &power_saver_drv.slow_ramping,
@@ -331,6 +335,7 @@ static int msm_drm_notifier_cb(struct notifier_block *nb, unsigned long action,
 	/* Parse framebuffer blank events as soon as they occur */
 	if (action != MSM_DRM_EARLY_EVENT_BLANK)
 		return NOTIFY_OK;
+	pr_info("_msm");
 
 	if (*blank == MSM_DRM_BLANK_UNBLANK)
 		power_saver_drv.status.state |= POWER_SAVER_STATE_SCREEN_ON;
@@ -338,7 +343,8 @@ static int msm_drm_notifier_cb(struct notifier_block *nb, unsigned long action,
 		power_saver_drv.status.state &= ~POWER_SAVER_STATE_SCREEN_ON;
 	else
 		return NOTIFY_OK;
-
+	pr_info("wakeup_msm");
+	power_saver_drv.status.state |= POWER_SAVER_STATE_UPDATED;
 	wake_up(&power_saver_drv.update_waitq);
 	return NOTIFY_OK;
 }
