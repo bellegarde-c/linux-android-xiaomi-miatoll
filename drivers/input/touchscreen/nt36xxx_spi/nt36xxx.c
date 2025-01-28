@@ -2380,6 +2380,7 @@ static int32_t nvt_ts_resume(struct device *dev)
 {
 	if (bTouchIsAwake) {
 		NVT_LOG("Touch is already resume\n");
+		nvt_update_firmware(ts->boot_update_firmware_name);
 		return 0;
 	}
 
