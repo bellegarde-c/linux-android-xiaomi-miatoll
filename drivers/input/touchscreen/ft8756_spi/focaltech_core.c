@@ -691,11 +691,6 @@ static int fts_read_parse_touchdata(struct fts_ts_data *data)
 		events[i].id = buf[FTS_TOUCH_ID_POS + base] >> 4;
 		events[i].area = buf[FTS_TOUCH_AREA_POS + base] >> 4;
 		events[i].p = buf[FTS_TOUCH_PRE_POS + base];
-
-		if (EVENT_DOWN(events[i].flag) && (data->point_num == 0)) {
-			FTS_INFO("abnormal touch data from fw");
-			return -EIO;
-		}
 	}
 
 	if (data->touch_point == 0) {
