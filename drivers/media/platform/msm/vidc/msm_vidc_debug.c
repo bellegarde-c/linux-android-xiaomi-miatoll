@@ -16,10 +16,7 @@
 #include "msm_vidc_debug.h"
 #include "vidc_hfi_api.h"
 
-int msm_vidc_debug = 0;
 EXPORT_SYMBOL(msm_vidc_debug);
-
-int msm_vidc_debug_out = 0;
 EXPORT_SYMBOL(msm_vidc_debug_out);
 
 /* 0x18 = HFI_DEBUG_MSG_FATAL | HFI_DEBUG_MSG_ERROR */
