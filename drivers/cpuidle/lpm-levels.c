@@ -1119,9 +1119,10 @@ static int cluster_configure(struct lpm_cluster *cluster, int idx,
 		 * clocks that are enabled and preventing the system level
 		 * LPMs(XO and Vmin).
 		 */
+#ifdef CONFIG_DEBUG_FS
 		if (!from_idle)
 			clock_debug_print_enabled(false);
-
+#endif
 		cpu = get_next_online_cpu(from_idle);
 		cpumask_copy(&cpumask, cpumask_of(cpu));
 		clear_predict_history();
