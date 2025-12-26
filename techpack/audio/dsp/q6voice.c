@@ -7703,10 +7703,6 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv)
 			ptr = data->payload;
 
 			pr_debug("%x %x\n", ptr[0], ptr[1]);
-			if (ptr[1] != 0) {
-				pr_err("%s: cmd = 0x%x returned error = 0x%x\n",
-					__func__, ptr[0], ptr[1]);
-			}
 			/*response from  CVS */
 			switch (ptr[0]) {
 			case VSS_ISTREAM_CMD_CREATE_PASSIVE_CONTROL_SESSION:
@@ -7899,10 +7895,6 @@ static int32_t qdsp_cvs_callback(struct apr_client_data *data, void *priv)
 		   data->opcode == VSS_ICOMMON_RSP_GET_PARAM_V3) {
 		pr_debug("%s: VSS_ICOMMON_RSP_GET_PARAM\n", __func__);
 		ptr = data->payload;
-		if (ptr[0] != 0) {
-			pr_err("%s: VSS_ICOMMON_RSP_GET_PARAM returned error = 0x%x\n",
-			       __func__, ptr[0]);
-		}
 		rtac_make_voice_callback(RTAC_CVS, data->payload,
 					data->payload_size);
 	}  else if (data->opcode == VSS_ISTREAM_EVT_RX_DTMF_DETECTED) {
@@ -7987,10 +7979,6 @@ static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv)
 			ptr = data->payload;
 
 			pr_debug("%x %x\n", ptr[0], ptr[1]);
-			if (ptr[1] != 0) {
-				pr_err("%s: cmd = 0x%x returned error = 0x%x\n",
-					__func__, ptr[0], ptr[1]);
-			}
 			switch (ptr[0]) {
 			case VSS_IVOCPROC_CMD_CREATE_FULL_CONTROL_SESSION_V2:
 			case VSS_IVOCPROC_CMD_CREATE_FULL_CONTROL_SESSION_V3:
@@ -8131,10 +8119,6 @@ static int32_t qdsp_cvp_callback(struct apr_client_data *data, void *priv)
 		   data->opcode == VSS_ICOMMON_RSP_GET_PARAM_V3) {
 		pr_debug("%s: VSS_ICOMMON_RSP_GET_PARAM\n", __func__);
 		ptr = data->payload;
-		if (ptr[0] != 0) {
-			pr_err("%s: VSS_ICOMMON_RSP_GET_PARAM returned error = 0x%x\n",
-			       __func__, ptr[0]);
-		}
 		rtac_make_voice_callback(RTAC_CVP, data->payload,
 			data->payload_size);
 	} else if (data->opcode == VSS_IVPCM_EVT_NOTIFY_V2) {

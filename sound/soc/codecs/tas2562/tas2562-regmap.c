@@ -505,7 +505,6 @@ static void tas2562_hw_reset(struct tas2562_priv *p_tas2562)
 		}
 		msleep(20);
 	}
-	dev_info(p_tas2562->dev, "reset gpio up !!\n");
 
 	p_tas2562->mn_l_current_book = -1;
 	p_tas2562->mn_l_current_page = -1;
@@ -526,8 +525,6 @@ void tas2562_enable_irq(struct tas2562_priv *p_tas2562, bool enable)
 			desc = irq_to_desc(p_tas2562->mn_irq);
 			if (desc && desc->depth > 0) {
 			enable_irq(p_tas2562->mn_irq);
-			} else {
-				dev_info (p_tas2562->dev, "### irq already enabled");
 			}
 			irq1_enabled = 1;
 		}
@@ -560,19 +557,16 @@ static void irq_work_routine(struct work_struct *work)
 	int n_result = 0;
 	enum channel chn;
 
-	dev_info(p_tas2562->dev, "%s\n", __func__);
 #ifdef CONFIG_TAS2562_CODEC
 	mutex_lock(&p_tas2562->codec_lock);
 #endif
 	tas2562_enable_irq(p_tas2562, false);
 
 	if (p_tas2562->mb_runtime_suspend) {
-		dev_info(p_tas2562->dev, "%s, Runtime Suspended\n", __func__);
 		goto end;
 	}
 
 	if (p_tas2562->mn_power_state == TAS2562_POWER_SHUTDOWN) {
-		dev_info(p_tas2562->dev, "%s, device not powered\n", __func__);
 		goto end;
 	}
 
@@ -615,10 +609,6 @@ static void irq_work_routine(struct work_struct *work)
 		TAS2562_LATCHEDINTERRUPTREG1, &nDevInt4Status);
 	else
 		goto reload;
-
-	dev_info(p_tas2562->dev, "IRQ status : 0x%x, 0x%x, 0x%x, 0x%x\n",
-			nDevInt1Status, nDevInt2Status,
-			nDevInt3Status, nDevInt4Status);
 
 	if (((nDevInt1Status & 0x7) != 0)
 		|| ((nDevInt2Status & 0x0f) != 0) ||
@@ -960,9 +950,6 @@ static int tas2562_parse_dt(struct device *dev, struct tas2562_priv *p_tas2562)
 		dev_err(p_tas2562->dev, "Looking up %s property in node %s failed %d\n",
 			"ti,reset-gpio", np->full_name,
 				p_tas2562->mn_reset_gpio);
-	} else {
-		dev_info(p_tas2562->dev, "ti,reset-gpio=%d",
-			p_tas2562->mn_reset_gpio);
 	}
 	if(p_tas2562->mn_channels != 1) {
 		p_tas2562->mn_reset_gpio2 = of_get_named_gpio(np, "ti,reset-gpio2", 0);
@@ -979,9 +966,6 @@ static int tas2562_parse_dt(struct device *dev, struct tas2562_priv *p_tas2562)
 	if (!gpio_is_valid(p_tas2562->mn_irq_gpio)) {
 		dev_err(p_tas2562->dev, "Looking up %s property in node %s failed %d\n",
 			"ti,irq-gpio", np->full_name, p_tas2562->mn_irq_gpio);
-	} else {
-		dev_info(p_tas2562->dev, "ti,irq-gpio=%d",
-			p_tas2562->mn_irq_gpio);
 	}
 	if(p_tas2562->mn_channels != 1) {
 		p_tas2562->mn_irq_gpio2 = of_get_named_gpio(np, "ti,irq-gpio2", 0);
@@ -1003,7 +987,6 @@ static int tas2562_i2c_probe(struct i2c_client *p_client,
 	int n_result;
 
 	dev_err(&p_client->dev, "Driver ID: %s\n", TAS2562_DRIVER_ID);
-	dev_info(&p_client->dev, "%s enter\n", __func__);
 
 	p_tas2562 = devm_kzalloc(&p_client->dev,
 		sizeof(struct tas2562_priv), GFP_KERNEL);
@@ -1029,7 +1012,6 @@ static int tas2562_i2c_probe(struct i2c_client *p_client,
 	}
 
 	if (p_client->dev.of_node) {
-    dev_info(&p_client->dev, "Before tas2562_parse_dt\n");
 		tas2562_parse_dt(&p_client->dev, p_tas2562);
 		
         }
@@ -1076,7 +1058,6 @@ static int tas2562_i2c_probe(struct i2c_client *p_client,
 
 	mutex_init(&p_tas2562->dev_lock);
 
-	dev_info(&p_client->dev, "Before SW reset\n");
 	/* Reset the chip */
 	n_result = tas2562_dev_write(p_tas2562, channel_both,
 			TAS2562_SOFTWARERESET, 0x01);
@@ -1084,7 +1065,6 @@ static int tas2562_i2c_probe(struct i2c_client *p_client,
 		dev_err(&p_client->dev, "I2c fail, %d\n", n_result);
 		goto err_i2c;//2019.11.27 longcheer chenqiang add for (new board) se4_i2c i2c fail
 	}
-	dev_info(&p_client->dev, "After SW reset\n");
 
 	if (gpio_is_valid(p_tas2562->mn_irq_gpio)) {
 		n_result = gpio_request(p_tas2562->mn_irq_gpio, "TAS2562-IRQ");
@@ -1098,7 +1078,6 @@ static int tas2562_i2c_probe(struct i2c_client *p_client,
 			TAS2562_MISCCONFIGURATIONREG0, 0xce);
 
 		p_tas2562->mn_irq = gpio_to_irq(p_tas2562->mn_irq_gpio);
-		dev_info(p_tas2562->dev, "irq = %d\n", p_tas2562->mn_irq);
 		INIT_DELAYED_WORK(&p_tas2562->irq_work, irq_work_routine);
 		n_result = request_threaded_irq(p_tas2562->mn_irq,
 				tas2562_irq_handler,
@@ -1125,7 +1104,6 @@ static int tas2562_i2c_probe(struct i2c_client *p_client,
 				TAS2562_MISCCONFIGURATIONREG0, 0xce);
 
 		p_tas2562->mn_irq2 = gpio_to_irq(p_tas2562->mn_irq_gpio2);
-		dev_info(p_tas2562->dev, "irq = %d\n", p_tas2562->mn_irq2);
 		INIT_DELAYED_WORK(&p_tas2562->irq_work, irq_work_routine);
 		n_result = request_threaded_irq(p_tas2562->mn_irq2,
 				tas2562_irq_handler,
@@ -1185,8 +1163,6 @@ err_gpio:
 static int tas2562_i2c_remove(struct i2c_client *p_client)
 {
 	struct tas2562_priv *p_tas2562 = i2c_get_clientdata(p_client);
-
-	dev_info(p_tas2562->dev, "%s\n", __func__);
 
 #ifdef CONFIG_TAS2562_CODEC
 	tas2562_deregister_codec(p_tas2562);

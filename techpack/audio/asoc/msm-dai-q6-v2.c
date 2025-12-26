@@ -1715,10 +1715,7 @@ static int msm_dai_q6_spdif_prepare(struct snd_pcm_substream *substream,
 
 		rc = afe_spdif_port_start(dai->id, &dai_data->spdif_port,
 				dai_data->rate);
-		if (rc < 0)
-			dev_err(dai->dev, "fail to open AFE port 0x%x\n",
-					dai->id);
-		else
+		if (rc >= 0)
 			set_bit(STATUS_PORT_STARTED,
 					dai_data->status_mask);
 	}
@@ -2120,18 +2117,11 @@ static int msm_dai_q6_prepare(struct snd_pcm_substream *substream,
 					       dai_data->afe_tx_out_channels,
 					       bitwidth,
 					       NULL, &dai_data->dec_config);
-			if (rc < 0) {
-				pr_err("%s: fail to open AFE port 0x%x\n",
-					__func__, dai->id);
-			}
 		} else {
 			rc = afe_port_start(dai->id, &dai_data->port_config,
 						dai_data->rate);
 		}
-		if (rc < 0)
-			dev_err(dai->dev, "fail to open AFE port 0x%x\n",
-				dai->id);
-		else
+		if (rc >= 0)
 			set_bit(STATUS_PORT_STARTED,
 				dai_data->status_mask);
 	}
@@ -4994,10 +4984,7 @@ static int msm_dai_q6_mi2s_prepare(struct snd_pcm_substream *substream,
 		 */
 		rc = afe_port_start(port_id, &dai_data->port_config,
 				    dai_data->rate);
-		if (rc < 0)
-			dev_err(dai->dev, "fail to open AFE port 0x%x\n",
-				dai->id);
-		else
+		if (rc >= 0)
 			set_bit(STATUS_PORT_STARTED,
 				dai_data->status_mask);
 	}
@@ -8288,8 +8275,6 @@ static int msm_dai_q6_tdm_prepare(struct snd_pcm_substream *substream,
 				msm_dai_q6_tdm_set_clk(dai_data,
 					dai->id, false);
 			}
-			dev_err(dai->dev, "%s: fail to open AFE port 0x%x\n",
-				__func__, dai->id);
 		} else {
 			set_bit(STATUS_PORT_STARTED,
 				dai_data->status_mask);
@@ -10537,10 +10522,7 @@ static int msm_dai_q6_cdc_dma_prepare(struct snd_pcm_substream *substream,
 
 		rc = afe_port_start(dai->id, &dai_data->port_config,
 						dai_data->rate);
-		if (rc < 0)
-			dev_err(dai->dev, "fail to open AFE port 0x%x\n",
-				dai->id);
-		else
+		if (rc >= 0)
 			set_bit(STATUS_PORT_STARTED,
 				dai_data->status_mask);
 	}

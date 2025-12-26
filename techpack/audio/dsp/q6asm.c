@@ -1738,9 +1738,6 @@ static int32_t q6asm_srvc_callback(struct apr_client_data *data, void *priv)
 		case ASM_CMD_SHARED_MEM_UNMAP_REGIONS:
 		case ASM_CMD_ADD_TOPOLOGIES:
 			if (data->payload_size >= 2 * sizeof(uint32_t) && payload[1] != 0) {
-				pr_err("%s: cmd = 0x%x returned error = 0x%x sid:%d\n",
-				       __func__, payload[0], payload[1],
-				       asm_token._token.session_id);
 				if (payload[0] ==
 				    ASM_CMD_SHARED_MEM_UNMAP_REGIONS)
 					atomic_set(&ac->unmap_cb_success, 0);
@@ -2019,8 +2016,6 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 					payload[0], payload[1],
 					data->src_port, data->dest_port);
 				if (payload[1] != 0) {
-					pr_err("%s: cmd = 0x%x returned error = 0x%x\n",
-						__func__, payload[0], payload[1]);
 					if (wakeup_flag) {
 						if ((is_adsp_reg_event(payload[0]) >=
 						     0) ||
@@ -2068,8 +2063,6 @@ static int32_t q6asm_callback(struct apr_client_data *data, void *priv)
 				pr_debug("%s:Payload = [0x%x]stat[0x%x]\n",
 						__func__, payload[0], payload[1]);
 				if (payload[1] != 0) {
-					pr_err("%s: cmd = 0x%x returned error = 0x%x\n",
-						 __func__, payload[0], payload[1]);
 					if (wakeup_flag) {
 						atomic_set(&ac->mem_state, payload[1]);
 						wake_up(&ac->mem_wait);

@@ -391,10 +391,7 @@ static int msm_dai_q6_hdmi_prepare(struct snd_pcm_substream *substream,
 
 		rc = afe_port_start(get_port_id(dai->id), &dai_data->port_config,
 				    dai_data->rate);
-		if (rc < 0)
-			dev_err(dai->dev, "fail to open AFE port %x\n",
-				get_port_id(dai->id));
-		else
+		if (rc >= 0)
 			set_bit(STATUS_PORT_STARTED,
 				dai_data->status_mask);
 	}

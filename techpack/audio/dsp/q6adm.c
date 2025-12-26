@@ -1612,10 +1612,6 @@ static int32_t adm_callback(struct apr_client_data *data, void *priv)
 				return 0;
 			}
 
-			if (payload[1] != 0) {
-				pr_err("%s: cmd = 0x%x returned error = 0x%x\n",
-					__func__, payload[0], payload[1]);
-			}
 			switch (payload[0]) {
 			case ADM_CMD_SET_PP_PARAMS_V5:
 			case ADM_CMD_SET_PP_PARAMS_V6:
@@ -2288,9 +2284,6 @@ static int adm_remap_and_send_cal_block(int cal_index, int port_id,
 		goto done;
 	}
 	ret = send_adm_cal_block(port_id, copp_idx, cal_block, perf_mode);
-	if (ret < 0)
-		pr_debug("%s: No cal sent for cal_index %d, port_id = 0x%x! ret %d sample_rate %d\n",
-			__func__, cal_index, port_id, ret, sample_rate);
 done:
 	return ret;
 }

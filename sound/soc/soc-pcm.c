@@ -824,8 +824,6 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 	if (cpu_dai->driver->ops && cpu_dai->driver->ops->prepare) {
 		ret = cpu_dai->driver->ops->prepare(substream, cpu_dai);
 		if (ret < 0) {
-			dev_err(cpu_dai->dev,
-				"ASoC: cpu DAI prepare error: %d\n", ret);
 			goto out;
 		}
 	}
@@ -854,8 +852,6 @@ static int soc_pcm_prepare(struct snd_pcm_substream *substream)
 
 out:
 	if (ret < 0 && substream->stream == SNDRV_PCM_STREAM_PLAYBACK) {
-		pr_err("%s: Issue stop stream for codec_dai due to op failure %d = ret\n",
-		__func__, ret);
 		snd_soc_dapm_stream_event(rtd,
 		SNDRV_PCM_STREAM_PLAYBACK,
 		SND_SOC_DAPM_STREAM_STOP);
@@ -2460,8 +2456,6 @@ int dpcm_fe_dai_prepare_be(struct snd_soc_pcm_runtime *fe,
 
 	ret = soc_pcm_prepare(be_substream);
 	if (ret < 0) {
-		dev_err(be->dev, "ASoC: backend prepare failed %d\n",
-				ret);
 		return ret;
 	}
 
@@ -2512,8 +2506,6 @@ int dpcm_be_dai_prepare(struct snd_soc_pcm_runtime *fe, int stream)
 
 		ret = soc_pcm_prepare(be_substream);
 		if (ret < 0) {
-			dev_err(be->dev, "ASoC: backend prepare failed %d\n",
-				ret);
 			break;
 		}
 
@@ -2536,8 +2528,6 @@ static void dpcm_be_async_prepare(void *data, async_cookie_t cookie)
 	ret = soc_pcm_prepare(be_substream);
 	if (ret < 0) {
 		be->err_ops = ret;
-		dev_err(be->dev, "ASoC: backend prepare failed %d\n",
-				ret);
 		return;
 	}
 	be->dpcm[stream].state = SND_SOC_DPCM_STATE_PREPARE;
@@ -2589,8 +2579,6 @@ void dpcm_be_dai_prepare_async(struct snd_soc_pcm_runtime *fe, int stream,
 
 		ret = soc_pcm_prepare(be_substream);
 		if (ret < 0) {
-			dev_err(be->dev, "ASoC: backend prepare failed %d\n",
-					ret);
 			be->err_ops = ret;
 			return;
 		}
